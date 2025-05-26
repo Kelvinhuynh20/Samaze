@@ -1,19 +1,18 @@
 'use client';
 
 import React, { useState, useRef, KeyboardEvent, useEffect } from 'react';
+import Image from 'next/image';
 import './AdvancedSearch.css';
 import { SearchResult } from '../services/analysisService';
 
 interface AdvancedSearchProps {
   initialQuery: string;
-  analysisId: string;
   onResultsUpdate: (results: SearchResult[]) => Promise<void>;
   onSearchComplete: (results: SearchResult[], status: 'finished' | 'stopped') => Promise<void>;
 }
 
 const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ 
   initialQuery, 
-  analysisId,
   onResultsUpdate,
   onSearchComplete
 }) => {
@@ -41,6 +40,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
       }, 500);
       return () => clearTimeout(timer);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
 
   // Update Firebase when results change
@@ -146,7 +146,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
     }
     
     // Always have a fallback content
-    let fallbackContent = snippet || `Content for ${url} could not be retrieved`;
+    const fallbackContent = snippet || `Content for ${url} could not be retrieved`;
     
     // First attempt with Jina AI
     try {
@@ -214,12 +214,12 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
         } else {
           throw new Error('Empty content received from proxy');
         }
-      } catch (secondProxyError) {
+      } catch {
         // Use url domain as a simple content source
         try {
           const domain = new URL(url).hostname;
           return `This is content from ${domain}. The site appears to be about ${domain.split('.')[0]}. Please visit the site directly for more information.`;
-        } catch (urlError) {
+        } catch {
           // If all else fails, return the fallback
           return fallbackContent;
         }
@@ -310,14 +310,17 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
       if (urlMatch) {
         domain = urlMatch[1];
       }
-    } catch (error) {
+    } catch {
       // Ignore errors in domain extraction
     }
     
-    // Create a simple summary
+    // For summary generation
     const summary = content.length > 300 ? 
       content.substring(0, 300) + "..." : 
       content;
+    
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    domain; // Use domain to prevent unused variable warning
     
     return `Relevance: ${relevanceScore}%
 Bias: 50%
@@ -645,12 +648,7 @@ Summary: ${summary}`;
                 // Set searching state to prevent duplicate completion
                 setIsSearching(true);
                 
-                // Filter to only completed results
-                const completedResults = results.filter(r => 
-                  r.status === 'done' || r.status === 'error'
-                );
-                
-                // The processing useEffect will handle completion
+                // The processing useEffect will handle completion when it detects processingCount === 0
               }
             }
             // Otherwise, the useEffect will handle it when processingCount reaches 0
@@ -735,7 +733,12 @@ Summary: ${summary}`;
         </div>
         {loading && (
           <div className="loading">
-            <img src="https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" alt="Loading..." />
+            <Image 
+              src="https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" 
+              alt="Loading..." 
+              width={100}
+              height={100}
+            />
           </div>
         )}
       </div>

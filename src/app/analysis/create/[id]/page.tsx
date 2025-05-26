@@ -7,10 +7,13 @@ import { getAnalysis, updateAnalysisResults, finishAnalysis, SearchResult } from
 import AdvancedSearch from '../../../components/AdvancedSearch';
 import './analysis.css';
 
+// Properly define params for Next.js dynamic routes
+interface Params {
+  id: string;
+}
+
 interface PageProps {
-  params: {
-    id: string;
-  };
+  params: Params;
 }
 
 export default function AnalysisPage({ params }: PageProps) {
@@ -317,7 +320,6 @@ export default function AnalysisPage({ params }: PageProps) {
     <div className="analysis-page">
       <AdvancedSearch 
         initialQuery={query}
-        analysisId={id}
         onResultsUpdate={handleResultsUpdate}
         onSearchComplete={handleSearchComplete}
       />

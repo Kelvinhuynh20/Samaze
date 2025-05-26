@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../auth/AuthProvider';
 import { getAnalysis, SearchResult } from '../../../services/analysisService';
 import './finished.css';
@@ -22,7 +22,6 @@ export default function FinishedAnalysisPage({ params }: PageProps) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [status, setStatus] = useState<'finished' | 'stopped'>('finished');
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
 
   // Fetch analysis data

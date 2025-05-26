@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../auth/AuthProvider';
+import Image from 'next/image';
 import './summarize.css';
 import { createSummary, updateSummary, finishSummary, addQAItem, getSummary } from '../../services/summarizeService';
 
@@ -113,6 +114,7 @@ export default function UrlSummarizerPage() {
         handleAnalyzePage(urlParam);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   useEffect(() => {
@@ -434,9 +436,9 @@ Key Concerns:
 
       setShowSummaryContainer(true);
 
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error('Error:', error);
-      showError(error.message || 'An error occurred while analyzing the content');
+      showError(error instanceof Error ? error.message : 'An error occurred while analyzing the content');
     } finally {
       setIsLoading(false);
     }
@@ -535,7 +537,7 @@ ${currentArticleContent}`;
           }
         }
       }
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error('Error asking question:', error);
       setQaHistory(prev => prev.map(item => item.id === newQuestionId ? {...item, answer: 'Error: Could not get an answer.'} : item));
     }
@@ -652,9 +654,9 @@ Example:
       } else {
         showError('Summary not found');
       }
-    } catch (error: any) {
-      showError(`Error loading summary: ${error.message}`);
-    } finally {
+    } catch (error: Error | unknown) {
+      console.error('Error loading summary:', error);
+      showError('Failed to load summary data');
       setIsLoading(false);
     }
   };
@@ -700,7 +702,7 @@ Example:
             placeholder="Nhập URL cần tóm tắt (Enter URL to summarize) (https://...)" 
           />
           <button 
-            onClick={(e) => handleAnalyzePage()}
+            onClick={() => handleAnalyzePage()}
             disabled={isLoading}
             className={isLoading ? 'loading' : ''}>
             {isLoading ? 'Đang Phân Tích...' : 'Phân Tích (Analyze)'}
@@ -711,7 +713,12 @@ Example:
 
       {isLoading && (
         <div className="loading">
-          <img src="https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" alt="Loading..." />
+          <Image 
+            src="https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" 
+            alt="Loading..." 
+            width={100}
+            height={100}
+          />
           <p>Đang phân tích nội dung... (Analyzing content...)</p>
         </div>
       )}
@@ -870,8 +877,7 @@ Example:
 
           <div className="reanalyze-section">
             <button 
-              onClick={(e) => {
-                e.preventDefault();
+              onClick={() => {
                 handleAnalyzePage();
               }}
               className="reanalyze-button">
