@@ -1,11 +1,20 @@
 import { database } from '../firebase/config';
-import { ref, set, get, remove, push, child, query, orderByChild, equalTo } from 'firebase/database';
+import { ref, set, get, push, child } from 'firebase/database';
 
 export interface QAItem {
   id: string;
   question: string;
   answer: string;
   timestamp: number;
+}
+
+export interface WebsiteAnalysisSection {
+  title: string;
+  rating?: string;
+  ratingColor?: string;
+  details?: string[];
+  content?: string;
+  type: 'detail' | 'strength-concern';
 }
 
 export interface SummaryData {
@@ -16,7 +25,7 @@ export interface SummaryData {
   detailedSummary: string;
   keywords: string;
   biasRating: number;
-  websiteAnalysis: any;
+  websiteAnalysis: WebsiteAnalysisSection[] | string;
   qaHistory: QAItem[];
   languageCode: string;
   createdAt: number;
@@ -45,7 +54,7 @@ export const createSummary = async (userId: string, url: string, language: strin
     detailedSummary: '',
     keywords: '',
     biasRating: 0,
-    websiteAnalysis: {},
+    websiteAnalysis: [],
     qaHistory: [],
     languageCode: language,
     createdAt: Date.now(),

@@ -1,5 +1,6 @@
 import { database } from '../firebase/config';
-import { ref, set, get, remove, push, child, query, orderByChild, equalTo } from 'firebase/database';
+import { ref, set, get, remove, push, child } from 'firebase/database';
+import { getAuth } from 'firebase/auth';
 
 export interface SearchResult {
   link: string;
@@ -107,7 +108,7 @@ export const finishAnalysis = async (id: string, results: SearchResult[], status
       // This is a fallback mechanism
       try {
         // Firebase might have an auth object we can use
-        const auth = require('firebase/auth').getAuth();
+        const auth = getAuth();
         if (auth.currentUser && auth.currentUser.uid) {
           console.log(`Using current authenticated user: ${auth.currentUser.uid}`);
           userId = auth.currentUser.uid;

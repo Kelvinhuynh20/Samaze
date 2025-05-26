@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { useAuth } from './auth/AuthProvider';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import './login.css';
 
 export default function LoginPage() {
@@ -25,10 +26,12 @@ export default function LoginPage() {
           onClick={signInWithGoogle}
           disabled={loading}
         >
-          <img 
+          <Image 
             src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" 
             alt="Google logo" 
-            className="google-logo" 
+            className="google-logo"
+            width={20}
+            height={20}
           />
           Sign in with Google
         </button>
