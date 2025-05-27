@@ -12,8 +12,10 @@ interface Params {
   id: string;
 }
 
-interface PageProps {
+// Fix the PageProps interface to match Next.js expectations
+type PageProps = {
   params: Params;
+  searchParams: { [key: string]: string | string[] | undefined };
 }
 
 export default function AnalysisPage({ params }: PageProps) {
