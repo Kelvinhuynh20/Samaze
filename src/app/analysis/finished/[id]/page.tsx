@@ -6,16 +6,14 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { getAnalysis, SearchResult } from '../../../services/analysisService';
 import './finished.css';
 
-interface PageProps {
-  params: {
-    id: string;
-  };
-}
+type ParamsWithId = { id: string };
+type PageProps = {
+  params: Promise<unknown> | undefined;
+  searchParams: Promise<unknown> | undefined;
+};
 
 export default function FinishedAnalysisPage({ params }: PageProps) {
-  // Access the ID directly from params
-  const { id } = params;
-  
+  const [id, setId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -24,24 +22,52 @@ export default function FinishedAnalysisPage({ params }: PageProps) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
+  useEffect(() => {
+    const resolveParams = async () => {
+      if (params instanceof Promise) {
+        try {
+          const resolvedParams = await params;
+          if (resolvedParams && typeof (resolvedParams as ParamsWithId).id === 'string') {
+            setId((resolvedParams as ParamsWithId).id);
+          } else {
+            console.error('Resolved params does not have a string id:', resolvedParams);
+            setError('Failed to get analysis ID from parameters.');
+            setId(null);
+          }
+        } catch (e) {
+          console.error('Error resolving params promise:', e);
+          setError('Failed to load analysis parameters.');
+          setId(null);
+        }
+      } else if (params && typeof (params as ParamsWithId).id === 'string') {
+        setId((params as ParamsWithId).id);
+      } else if (params === undefined) {
+        console.error('Params are undefined');
+        setError('Analysis parameters are missing.');
+        setId(null);
+      } else {
+        console.error('Unexpected params structure:', params);
+        setError('Invalid analysis parameters structure.');
+        setId(null);
+      }
+    };
+    resolveParams();
+  }, [params]);
+
   // Fetch analysis data
   useEffect(() => {
+    if (!id || !user) return;
     const fetchAnalysis = async () => {
-      if (!user) return;
-      
       try {
         const analysis = await getAnalysis(id);
-        
         if (!analysis) {
           setError('Analysis not found');
           return;
         }
-        
         if (analysis.userId !== user.uid) {
           setError('You do not have permission to view this analysis');
           return;
         }
-        
         setQuery(analysis.query);
         setResults(analysis.results || []);
         setStatus(analysis.status as 'finished' | 'stopped');
@@ -52,7 +78,6 @@ export default function FinishedAnalysisPage({ params }: PageProps) {
         setLoading(false);
       }
     };
-    
     if (!authLoading) {
       if (!user) {
         router.push('/');

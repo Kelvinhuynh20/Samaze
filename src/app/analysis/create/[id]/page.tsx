@@ -7,22 +7,50 @@ import { getAnalysis, updateAnalysisResults, finishAnalysis, SearchResult } from
 import AdvancedSearch from '../../../components/AdvancedSearch';
 import './analysis.css';
 
-// Properly define params for Next.js dynamic routes
-interface Params {
-  id: string;
-}
-
-// Fix the PageProps interface to match Next.js expectations
+// Match the generated type: params is Promise<unknown> | undefined
+type ParamsWithId = { id: string };
 type PageProps = {
-  params: Params;
-  searchParams: { [key: string]: string | string[] | undefined };
+  params: Promise<unknown> | undefined;
+  searchParams: Promise<unknown> | undefined;
 }
 
 export default function AnalysisPage({ params }: PageProps) {
-  // Access the ID directly from params
-  const { id } = params;
+  const [id, setId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const resolveParams = async () => {
+      if (params instanceof Promise) {
+        try {
+          const resolvedParams = await params;
+          if (resolvedParams && typeof (resolvedParams as ParamsWithId).id === 'string') {
+            setId((resolvedParams as ParamsWithId).id);
+          } else {
+            console.error('Resolved params does not have a string id:', resolvedParams);
+            setError('Failed to get analysis ID from parameters.');
+            setId(null);
+          }
+        } catch (e) {
+          console.error('Error resolving params promise:', e);
+          setError('Failed to load analysis parameters.');
+          setId(null);
+        }
+      } else if (params && typeof (params as ParamsWithId).id === 'string') {
+        setId((params as ParamsWithId).id);
+      } else if (params === undefined) {
+        console.error('Params are undefined');
+        setError('Analysis parameters are missing.');
+        setId(null);
+      } else {
+        console.error('Unexpected params structure:', params);
+        setError('Invalid analysis parameters structure.');
+        setId(null);
+      }
+    };
+
+    resolveParams();
+  }, [params]);
   
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Keep loading true until id is set or error occurs
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const router = useRouter();
@@ -35,7 +63,7 @@ export default function AnalysisPage({ params }: PageProps) {
 
   // Handler for automatically saving results when the page is unloaded
   const handleAutoSave = async () => {
-    if (savedRef.current || !user) {
+    if (savedRef.current || !user || !id) {
       return;
     }
     
@@ -62,10 +90,55 @@ export default function AnalysisPage({ params }: PageProps) {
     }
   };
 
-  useEffect(() => {
-    const fetchAnalysis = async () => {
-      if (!user) return;
+  // Handle search results update
+  const handleResultsUpdate = async (results: SearchResult[]) => {
+    if (!user || !id) return;
+    
+    // Update ref for auto-save functionality
+    currentResultsRef.current = results;
+    
+    try {
+      await updateAnalysisResults(id, results);
+    } catch (error) {
+      console.error('Error updating results:', error);
+    }
+  };
+
+  // Add this after handleAutoSave
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') {
+      // Create a separate async function to handle the auto-save
+      const performAutoSave = async () => {
+        try {
+          await handleAutoSave();
+          console.log('Auto-save completed on visibility change');
+        } catch (error) {
+          console.error('Error during auto-save on visibility change:', error);
+        }
+      };
       
+      // Execute the auto-save without waiting
+      performAutoSave();
+    }
+  };
+
+  // Add the beforeunload handler
+  const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    if (!savedRef.current && currentResultsRef.current.length > 0) {
+      e.preventDefault();
+      e.returnValue = 'You have an analysis in progress. Are you sure you want to leave?';
+      
+      // Attempt auto-save, but this may not complete in time for beforeunload
+      handleAutoSave();
+      
+      return e.returnValue;
+    }
+  };
+
+  useEffect(() => {
+    if (!id || !user) return;
+    
+    const fetchAnalysis = async () => {
       try {
         const analysis = await getAnalysis(id);
         
@@ -105,36 +178,6 @@ export default function AnalysisPage({ params }: PageProps) {
     }
     
     // Add navigation warning
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!savedRef.current && currentResultsRef.current.length > 0) {
-        e.preventDefault();
-        e.returnValue = 'You have an analysis in progress. Are you sure you want to leave?';
-        
-        // Attempt auto-save, but this may not complete in time for beforeunload
-        handleAutoSave();
-        
-        return e.returnValue;
-      }
-    };
-    
-    // Handle visibility change to catch tab closing or switching
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        // Create a separate async function to handle the auto-save
-        const performAutoSave = async () => {
-          try {
-            await handleAutoSave();
-            console.log('Auto-save completed on visibility change');
-          } catch (error) {
-            console.error('Error during auto-save on visibility change:', error);
-          }
-        };
-        
-        // Execute the auto-save without waiting
-        performAutoSave();
-      }
-    };
-    
     window.addEventListener('beforeunload', handleBeforeUnload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
@@ -144,7 +187,7 @@ export default function AnalysisPage({ params }: PageProps) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       
       // Auto-save on component unmount if not already saved
-      if (!savedRef.current && currentResultsRef.current.length > 0) {
+      if (!savedRef.current && currentResultsRef.current.length > 0 && id) {
         console.log('Component unmounting, attempting to save results...');
         
         // Create a synchronous version that will block unmounting briefly
@@ -172,24 +215,15 @@ export default function AnalysisPage({ params }: PageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user, authLoading, router]);
 
-  // Handle search results update
-  const handleResultsUpdate = async (results: SearchResult[]) => {
-    if (!user) return;
-    
-    // Update ref for auto-save functionality
-    currentResultsRef.current = results;
-    
-    try {
-      await updateAnalysisResults(id, results);
-    } catch (error) {
-      console.error('Error updating results:', error);
-    }
-  };
-
   // Handle search completion
   const handleSearchComplete = async (results: SearchResult[], status: 'finished' | 'stopped') => {
     if (!user) {
       console.error('No user found in handleSearchComplete');
+      return;
+    }
+    
+    if (!id) {
+      console.error('No analysis ID found in handleSearchComplete');
       return;
     }
     
@@ -219,6 +253,7 @@ export default function AnalysisPage({ params }: PageProps) {
       // Force navigation with direct window.location change to ensure it works
       // This is more reliable than router.push in some cases
       window.location.href = `/analysis/finished/${finishedId}?from=${id}`;
+      
     } catch (error) {
       console.error('Error finishing analysis:', error);
       
