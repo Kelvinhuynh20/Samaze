@@ -3,6 +3,7 @@
 import React from 'react';
 import { useAuth } from '../auth/AuthProvider';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import './settings.css';
 
 export default function SettingsPage() {
@@ -32,7 +33,12 @@ export default function SettingsPage() {
         <div className="account-info">
           <div className="account-avatar">
             {user.photoURL ? (
-              <img src={user.photoURL} alt={user.displayName || 'User'} />
+              <Image 
+                src={user.photoURL} 
+                alt={user.displayName || 'User'} 
+                width={100}
+                height={100}
+              />
             ) : (
               <div className="avatar-placeholder">
                 {user.displayName ? user.displayName[0].toUpperCase() : 'U'}

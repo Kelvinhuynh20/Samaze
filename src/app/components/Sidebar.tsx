@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '../auth/AuthProvider';
 import './Sidebar.css';
 
@@ -57,7 +58,13 @@ const Sidebar = () => {
             <>
               <div className="avatar">
                 {user.photoURL ? (
-                  <img src={user.photoURL} alt={user.displayName || 'User'} />
+                  <Image 
+                    src={user.photoURL} 
+                    alt={user.displayName || 'User'} 
+                    width={40} 
+                    height={40}
+                    className="avatar-image"
+                  />
                 ) : (
                   <div className="avatar-placeholder">
                     {user.displayName ? user.displayName[0].toUpperCase() : 'U'}

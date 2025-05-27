@@ -167,6 +167,7 @@ export default function AnalysisPage({ params }: PageProps) {
         saveResults();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user, authLoading, router]);
 
   // Handle search results update

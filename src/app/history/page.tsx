@@ -89,7 +89,7 @@ export default function HistoryPage() {
           
           {searchHistory.length === 0 ? (
             <div className="no-history">
-              <p>You haven't completed any searches yet.</p>
+              <p>You haven&apos;t completed any searches yet.</p>
               <Link href="/analysis/new" className="new-search-button">
                 Start a New Search
               </Link>
@@ -133,7 +133,7 @@ export default function HistoryPage() {
           
           {summaryHistory.length === 0 ? (
             <div className="no-history">
-              <p>You haven't completed any URL summaries yet.</p>
+              <p>You haven&apos;t completed any URL summaries yet.</p>
               <Link href="/analysis/summarize" className="new-search-button">
                 Summarize a URL
               </Link>
